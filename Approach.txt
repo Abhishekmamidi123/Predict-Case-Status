@@ -1,0 +1,30 @@
+The task was to predict the CASE_STATUS of H1B Visa with the given data-set. In the following sections, I have described my approach, how I preprocessed and modelled for CASE_STATUS prediction.
+________________________________________________________________
+I. Dropped columns:
+1. CASE_NO - This is a unique number for each CASE. Since, it does not capture any information, I dropped this column.
+2. EMPLOYER_NAME - This column has been removed because there are many catgories(53,463). Most of the categories occur only once. So, it's better to drop this feature.
+3. EMPLOYER_COUNTRY - There are 4 categories(USA, CANADA, AUSTRALIA, CHINA) in this column. Out of all Visa cases in training set, only 9 belong to CANADA, AUSTRALIA and CHINA. In test data, all the cases belong to USA. As this feature is constant in test data, this feature has been dropped.
+4. WORKSITE_POSTAL_CODE - There are 17427 categories. I have compared the performance of the models with and without this feature. Since, it didnot effect the score much, I dropped this feature.
+________________________________________________________________
+II. Handling NULL values:
+1. CASE_SUBMITTED_DAY has 3999 null values. Since, this column has day information, I imputed missing values by ramdomly sampling numbers between 1 to 28 (if it is between 1 to 31, some of the months may not have that many days).
+2. EMPLOYER_STATE is a categorical feature with 10 null values. Those are filled with the mode of the values in that column.
+3. NAICS_CODE is a categorical feature with 3999 null values and those were imputed with the mode of all the values in that feature. This is better to drop rather than imputing null values.
+4. PREVAILING_WAGE is a numerical feature with 3999 null values. Those values were imputed with the mean of all the values in that feature.
+5. H-1B_DEPENDENT and WILLFUL_VIOLATOR features are categorical features with 6334 null values. Those values were imputed with the mode of all the values in that feature.
+________________________________________________________________
+III. New features:
+1. Used (CASE_SUBMITTED_DAY, CASE_SUBMITTED_MONTH, CASE_SUBMITTED_YEAR) and (DECISION_DAY, DECISION_MONTH, DECISION_YEAR) to get CASE_SUBMITTED_DATE and DECISION_DATE date-time features respectively.
+2. Difference between CASE_SUBMITTED_DATE and DECISION_DATE date-time columns which carries information about the gap (in number of days) is labelled as DECISION_PERIOD.
+3. A new division feature(WAGE_RATE_OF_PAY_FROM/WAGE_RATE_OF_PAY_TO) has been created from WAGE_RATE_OF_PAY_FROM and WAGE_RATE_OF_PAY_TO. Most of the methods capture information from the addition and subtraction of features. But, it is difficult to extract information from division of two features. So, I have created this feature to extract hidden information. This feature has increased the F1 score.
+4. A new boolean feature IS_ES_SAMEAS_WS is added which tells whether the EMPLOYER_STATE and WORKSITE_STATE are the same or not.
+5. PW_SOURCE_OTHER is a categorical feature that has several categories in which most of the categories have occurred less than 10 times. Such categories are clubbed into one category. Around 116 categories are combined into one category('OTHER').
+________________________________________________________________
+IV. Modelling
+1. After performing data cleaning and imputing NULL values, I applied XGBoost Classifier as a base model. This gave 96.58 score on LB. 
+2. Later, I included additional features (given in section III). These additional features boosted my score. I achieved 97.72 f1_score.
+3. Since the dataset provided is imbalanced, I manually up-sampled the data-points with lower class by 20 times and finally achieved a score of 97.78.
+4. For my final submission, I applied 3 XGBoost models by varying n_estimators, max_depth, random_state, learning_rate parameters and ensembled the three. I took mode of the three outputs and finally achieved best score of 97.99457 on LB.
+5. I also used other models (Light GBM and Random Forest Classifier) and made submissions. However, XGBoost outperformed other models.
+
+The final model was the mode of three XGBoost models.
